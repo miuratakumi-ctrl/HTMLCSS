@@ -5,7 +5,7 @@
 cd "$(dirname "$0")"
 
 echo "=== SEO Auto 起動中 ==="
-python3 src/seo_auto.py
+python3 src/main.py
 
 echo ""
 echo "完了しました。このウィンドウを閉じてください。"

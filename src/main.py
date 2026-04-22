@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 SEO Auto - メインスクリプト
-使い方: run.command をダブルクリック、または python3 src/seo_auto.py
+使い方: run.command をダブルクリック、または python3 src/main.py
 入力ファイルは input/ に置いてください。出力は output/ に書き出されます。
 """
 
