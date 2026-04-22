@@ -1,12 +1,12 @@
 """
 GA4 / GSC / expected_pv を突合して output/report.csv を生成するスクリプト
+標準ライブラリのみで動作します（pandas 不要）
 """
 
+import csv
 import os
 import calendar
 from datetime import date
-
-import pandas as pd
 
 # ─────────────────────────────────────────────
 # 設定: ファイルパス
@@ -36,101 +36,77 @@ CTA_COLUMN_CANDIDATES = [
 # GA4 列名候補
 GA4_COLUMN_MAP = {
     "article_url": ["article_url", "URL", "url", "ページURL", "page_url", "記事URL"],
-    "PV": ["PV", "pv", "ページビュー", "page_views", "pageviews", "セッション"],
+    "PV":          ["PV", "pv", "ページビュー", "page_views", "pageviews", "セッション"],
     "アクティブユーザー": [
-        "アクティブユーザー",
-        "active_users",
-        "activeUsers",
-        "ユーザー",
-        "users",
+        "アクティブユーザー", "active_users", "activeUsers", "ユーザー", "users",
     ],
     "平均エンゲージメント": [
-        "平均エンゲージメント",
-        "avg_engagement_time",
-        "平均エンゲージメント時間",
-        "averageEngagementTime",
-        "engagement_time",
-        "エンゲージメント時間",
+        "平均エンゲージメント", "avg_engagement_time", "平均エンゲージメント時間",
+        "averageEngagementTime", "engagement_time", "エンゲージメント時間",
     ],
-    "イベント数": ["イベント数", "event_count", "events", "eventCount"],
+    "イベント数":   ["イベント数", "event_count", "events", "eventCount"],
     "キーイベント": [
-        "キーイベント",
-        "key_events",
-        "conversions",
-        "コンバージョン",
-        "keyEvents",
+        "キーイベント", "key_events", "conversions", "コンバージョン", "keyEvents",
     ],
     # CTAクリック数は CTA_COLUMN_CANDIDATES で別管理
 }
 
 # GSC 列名候補
 GSC_COLUMN_MAP = {
-    "article_url": ["article_url", "URL", "url", "ページ", "page", "ページURL", "記事URL"],
-    "インプレッション": [
-        "インプレッション",
-        "impressions",
-        "Impressions",
-        "表示回数",
-    ],
-    "記事クリック数": [
-        "記事クリック数",
-        "clicks",
-        "Clicks",
-        "クリック数",
-        "クリック",
-    ],
-    "記事CTR": [
-        "記事CTR",
-        "ctr",
-        "CTR",
-        "クリック率",
-    ],
-    "掲載順位": [
-        "掲載順位",
-        "position",
-        "Position",
-        "平均掲載順位",
-        "avg_position",
-    ],
+    "article_url":  ["article_url", "URL", "url", "ページ", "page", "ページURL", "記事URL"],
+    "インプレッション": ["インプレッション", "impressions", "Impressions", "表示回数"],
+    "記事クリック数":   ["記事クリック数", "clicks", "Clicks", "クリック数", "クリック"],
+    "記事CTR":     ["記事CTR", "ctr", "CTR", "クリック率"],
+    "掲載順位":     ["掲載順位", "position", "Position", "平均掲載順位", "avg_position"],
 }
 
 # expected_pv 列名候補
 EPV_COLUMN_MAP = {
-    "article_url": ["article_url", "URL", "url", "記事URL", "page_url"],
+    "article_url":        ["article_url", "URL", "url", "記事URL", "page_url"],
     "monthly_expected_pv": [
-        "monthly_expected_pv",
-        "expected_pv",
-        "月間期待PV",
-        "目標PV",
-        "target_pv",
+        "monthly_expected_pv", "expected_pv", "月間期待PV", "目標PV", "target_pv",
     ],
 }
 
 # ─────────────────────────────────────────────
-# ユーティリティ: 列名の正規化
+# ユーティリティ
 # ─────────────────────────────────────────────
 
-def resolve_column(df: pd.DataFrame, candidates: list[str], default_name: str) -> str:
-    """候補リストの中で DataFrame に実在する最初の列名を返す。なければ default_name を返す。"""
+def to_float(value, default=0.0):
+    """文字列を float に変換。失敗したら default を返す。"""
+    try:
+        return float(str(value).replace(",", "").strip())
+    except (ValueError, TypeError):
+        return default
+
+
+def resolve_key(row_keys: list[str], candidates: list[str]) -> str:
+    """候補リストの中で row_keys に存在する最初のキーを返す。なければ空文字。"""
     for c in candidates:
-        if c in df.columns:
+        if c in row_keys:
             return c
-    return default_name
+    return ""
 
 
-def normalize_columns(df: pd.DataFrame, column_map: dict[str, list[str]]) -> pd.DataFrame:
-    """column_map に従って列名を正規化（リネーム）した DataFrame を返す。"""
-    rename = {}
+def normalize_row(raw_row: dict, column_map: dict) -> dict:
+    """column_map に従って辞書のキーを正規化して返す。"""
+    keys = list(raw_row.keys())
+    result = {}
     for target, candidates in column_map.items():
-        found = resolve_column(df, candidates, "")
-        if found and found != target:
-            rename[found] = target
-    return df.rename(columns=rename)
+        found = resolve_key(keys, candidates)
+        result[target] = raw_row.get(found, "").strip() if found else ""
+    return result
 
 
-def to_numeric_safe(series: pd.Series) -> pd.Series:
-    """文字列混じりの列を数値型に変換。変換できない値は 0 にする。"""
-    return pd.to_numeric(series, errors="coerce").fillna(0)
+def load_csv(path: str) -> list[dict]:
+    """UTF-8（BOM付き対応）で CSV を読み込み、辞書のリストを返す。"""
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        # 列名の前後空白を除去
+        rows = []
+        for raw in reader:
+            rows.append({k.strip(): v for k, v in raw.items()})
+    return rows
 
 
 # ─────────────────────────────────────────────
@@ -156,142 +132,165 @@ def calc_expected_pv(monthly: float, today: date | None = None) -> float:
     if today is None:
         today = date.today()
     days_in_month = calendar.monthrange(today.year, today.month)[1]
-    elapsed_days = today.day
-    return monthly * (elapsed_days / days_in_month)
+    return monthly * (today.day / days_in_month)
 
 
 # ─────────────────────────────────────────────
-# メイン処理
+# 各CSVの読み込みと正規化
 # ─────────────────────────────────────────────
 
-def load_ga4() -> pd.DataFrame:
-    df = pd.read_csv(GA4_PATH, dtype=str)
-    df.columns = df.columns.str.strip()
+def load_ga4() -> dict[str, dict]:
+    rows = load_csv(GA4_PATH)
+    result = {}
+    for raw in rows:
+        row = normalize_row(raw, GA4_COLUMN_MAP)
 
-    # CTAクリック数列を探す（CTA_COLUMN_CANDIDATES で管理）
-    cta_col = resolve_column(df, CTA_COLUMN_CANDIDATES, "")
-    if cta_col and cta_col != "CTAクリック数":
-        df = df.rename(columns={cta_col: "CTAクリック数"})
-    elif not cta_col:
-        df["CTAクリック数"] = "0"
+        # CTAクリック数: CTA_COLUMN_CANDIDATES で検索
+        cta_key = resolve_key(list(raw.keys()), CTA_COLUMN_CANDIDATES)
+        row["CTAクリック数"] = raw.get(cta_key, "0").strip() if cta_key else "0"
 
-    df = normalize_columns(df, GA4_COLUMN_MAP)
-    df["article_url"] = df["article_url"].str.strip()
-
-    for col in ["PV", "アクティブユーザー", "平均エンゲージメント", "イベント数", "キーイベント", "CTAクリック数"]:
-        if col in df.columns:
-            df[col] = to_numeric_safe(df[col])
-        else:
-            df[col] = 0
-
-    return df[["article_url", "PV", "アクティブユーザー", "平均エンゲージメント", "イベント数", "キーイベント", "CTAクリック数"]]
-
-
-def load_gsc() -> pd.DataFrame:
-    df = pd.read_csv(GSC_PATH, dtype=str)
-    df.columns = df.columns.str.strip()
-    df = normalize_columns(df, GSC_COLUMN_MAP)
-    df["article_url"] = df["article_url"].str.strip()
-
-    for col in ["インプレッション", "記事クリック数", "記事CTR", "掲載順位"]:
-        if col in df.columns:
-            df[col] = to_numeric_safe(df[col])
-        else:
-            df[col] = 0
-
-    return df[["article_url", "インプレッション", "記事クリック数", "記事CTR", "掲載順位"]]
+        url = row["article_url"].strip()
+        if not url:
+            continue
+        result[url] = {
+            "PV":             to_float(row["PV"]),
+            "アクティブユーザー": to_float(row["アクティブユーザー"]),
+            "平均エンゲージメント": to_float(row["平均エンゲージメント"]),
+            "イベント数":      to_float(row["イベント数"]),
+            "キーイベント":    to_float(row["キーイベント"]),
+            "CTAクリック数":   to_float(row["CTAクリック数"]),
+        }
+    return result
 
 
-def load_epv() -> pd.DataFrame:
-    df = pd.read_csv(EPV_PATH, dtype=str)
-    df.columns = df.columns.str.strip()
-    df = normalize_columns(df, EPV_COLUMN_MAP)
-    df["article_url"] = df["article_url"].str.strip()
-    df["monthly_expected_pv"] = to_numeric_safe(df["monthly_expected_pv"])
-    return df[["article_url", "monthly_expected_pv"]]
+def load_gsc() -> dict[str, dict]:
+    rows = load_csv(GSC_PATH)
+    result = {}
+    for raw in rows:
+        row = normalize_row(raw, GSC_COLUMN_MAP)
+        url = row["article_url"].strip()
+        if not url:
+            continue
+        result[url] = {
+            "インプレッション": to_float(row["インプレッション"]),
+            "記事クリック数":   to_float(row["記事クリック数"]),
+            "記事CTR":     to_float(row["記事CTR"]),
+            "掲載順位":     to_float(row["掲載順位"]),
+        }
+    return result
 
 
-def build_report() -> pd.DataFrame:
+def load_epv() -> dict[str, float]:
+    rows = load_csv(EPV_PATH)
+    result = {}
+    for raw in rows:
+        row = normalize_row(raw, EPV_COLUMN_MAP)
+        url = row["article_url"].strip()
+        if not url:
+            continue
+        result[url] = to_float(row["monthly_expected_pv"])
+    return result
+
+
+# ─────────────────────────────────────────────
+# レポート生成
+# ─────────────────────────────────────────────
+
+def build_report() -> list[dict]:
     today = date.today()
 
     ga4 = load_ga4()
     gsc = load_gsc()
     epv = load_epv()
 
-    # article_url を主キーとして結合（outer で欠損も保持）
-    df = ga4.merge(gsc, on="article_url", how="outer")
-    df = df.merge(epv, on="article_url", how="outer")
+    # 全URLの和集合を主キーとして結合
+    all_urls = sorted(set(ga4) | set(gsc) | set(epv))
 
-    # 欠損数値を 0 で埋める
-    numeric_cols = [
-        "PV", "アクティブユーザー", "平均エンゲージメント", "イベント数",
-        "キーイベント", "CTAクリック数", "インプレッション", "記事クリック数",
-        "記事CTR", "掲載順位", "monthly_expected_pv",
-    ]
-    for col in numeric_cols:
-        if col in df.columns:
-            df[col] = df[col].fillna(0)
+    ga4_zero = {"PV": 0, "アクティブユーザー": 0, "平均エンゲージメント": 0,
+                "イベント数": 0, "キーイベント": 0, "CTAクリック数": 0}
+    gsc_zero = {"インプレッション": 0, "記事クリック数": 0, "記事CTR": 0, "掲載順位": 0}
+
+    rows = []
+    for url in all_urls:
+        g = ga4.get(url, ga4_zero)
+        s = gsc.get(url, gsc_zero)
+        monthly = epv.get(url, 0.0)
+
+        pv          = g["PV"]
+        expected_pv = round(calc_expected_pv(monthly, today), 1)
+        pv_diff     = round(pv - expected_pv, 1)
+
+        if expected_pv != 0:
+            zougen   = round((pv - expected_pv) / expected_pv, 4)
+            pace     = round(pv / expected_pv, 4)
         else:
-            df[col] = 0
+            zougen   = ""
+            pace     = ""
 
-    # ── 計算列 ──────────────────────────────
-    df["期待PV"] = df["monthly_expected_pv"].apply(
-        lambda m: round(calc_expected_pv(m, today), 1)
-    )
+        engage = g["平均エンゲージメント"]
 
-    df["PV差分"] = df["PV"] - df["期待PV"]
+        rows.append({
+            "article_url":     url,
+            "PV":              pv,
+            "期待PV":          expected_pv,
+            "PV差分":          pv_diff,
+            "増減率":          zougen,
+            "ペース比":        pace,
+            "ランク":          None,          # 後で付与
+            "アクティブユーザー": g["アクティブユーザー"],
+            "平均エンゲージメント": engage,
+            "エンゲージ評価":  evaluate_engagement(engage),
+            "イベント数":      g["イベント数"],
+            "キーイベント":    g["キーイベント"],
+            "インプレッション": s["インプレッション"],
+            "記事クリック数":   s["記事クリック数"],
+            "CTAクリック数":   g["CTAクリック数"],
+            "記事CTR":     s["記事CTR"],
+            "掲載順位":     s["掲載順位"],
+        })
 
-    # 0除算ガード: 期待PV が 0 の行は NaN → 空欄
-    df["増減率"] = df.apply(
-        lambda r: (r["PV"] - r["期待PV"]) / r["期待PV"] if r["期待PV"] != 0 else None,
-        axis=1,
-    )
+    # ランク付け: ペース比の高い順（空欄は末尾）
+    def pace_sort_key(r):
+        p = r["ペース比"]
+        return (0, -p) if isinstance(p, (int, float)) else (1, 0)
 
-    df["ペース比"] = df.apply(
-        lambda r: r["PV"] / r["期待PV"] if r["期待PV"] != 0 else None,
-        axis=1,
-    )
+    rows.sort(key=pace_sort_key)
+    for i, row in enumerate(rows, start=1):
+        row["ランク"] = i
 
-    # ランク: ペース比の高い順（NaN は末尾）
-    df["ランク"] = df["ペース比"].rank(ascending=False, na_option="bottom").astype(int)
+    return rows
 
-    df["エンゲージ評価"] = df["平均エンゲージメント"].apply(evaluate_engagement)
 
-    # ── 出力列順 ────────────────────────────
-    output_cols = [
-        "article_url",
-        "PV",
-        "期待PV",
-        "PV差分",
-        "増減率",
-        "ペース比",
-        "ランク",
-        "アクティブユーザー",
-        "平均エンゲージメント",
-        "エンゲージ評価",
-        "イベント数",
-        "キーイベント",
-        "インプレッション",
-        "記事クリック数",
-        "CTAクリック数",
-        "記事CTR",
-        "掲載順位",
-    ]
+# ─────────────────────────────────────────────
+# 出力
+# ─────────────────────────────────────────────
 
-    report = df[output_cols].copy()
+OUTPUT_COLUMNS = [
+    "article_url", "PV", "期待PV", "PV差分", "増減率", "ペース比", "ランク",
+    "アクティブユーザー", "平均エンゲージメント", "エンゲージ評価",
+    "イベント数", "キーイベント", "インプレッション", "記事クリック数",
+    "CTAクリック数", "記事CTR", "掲載順位",
+]
 
-    # 増減率・ペース比を小数点2桁に丸める
-    report["増減率"] = report["増減率"].apply(
-        lambda x: round(x, 4) if pd.notna(x) else ""
-    )
-    report["ペース比"] = report["ペース比"].apply(
-        lambda x: round(x, 4) if pd.notna(x) else ""
-    )
 
-    # ランク順にソート
-    report = report.sort_values("ランク").reset_index(drop=True)
+def write_report(rows: list[dict]):
+    with open(OUTPUT_PATH, "w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.DictWriter(f, fieldnames=OUTPUT_COLUMNS, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(rows)
 
-    return report
+
+def preview(rows: list[dict], n: int = 3):
+    """先頭 n 件を簡易表示する。"""
+    col_widths = {c: max(len(c), 6) for c in OUTPUT_COLUMNS}
+    header = "  ".join(c.ljust(col_widths[c]) for c in OUTPUT_COLUMNS)
+    print(header)
+    print("-" * len(header))
+    for row in rows[:n]:
+        line = "  ".join(
+            str(row.get(c, "")).ljust(col_widths[c]) for c in OUTPUT_COLUMNS
+        )
+        print(line)
 
 
 def main():
@@ -301,21 +300,20 @@ def main():
     print(f"読込: {EPV_PATH}")
 
     try:
-        report = build_report()
+        rows = build_report()
     except FileNotFoundError as e:
         print(f"\n[エラー] ファイルが見つかりません: {e}")
         print("input/ フォルダに ga4.csv / gsc.csv / expected_pv.csv を配置してください。")
         return
-    except KeyError as e:
-        print(f"\n[エラー] 列名が見つかりません: {e}")
-        print("CSVの列名を確認し、main.py の列名候補リストを更新してください。")
+    except Exception as e:
+        print(f"\n[エラー] {e}")
         return
 
-    report.to_csv(OUTPUT_PATH, index=False, encoding="utf-8-sig")
+    write_report(rows)
     print(f"\n出力完了: {OUTPUT_PATH}")
-    print(f"行数: {len(report)} 記事")
+    print(f"行数: {len(rows)} 記事")
     print("\n── プレビュー（先頭3件）──")
-    print(report.head(3).to_string(index=False))
+    preview(rows)
 
 
 if __name__ == "__main__":
