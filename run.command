@@ -1,12 +1,11 @@
 #!/bin/bash
-# ダブルクリックで実行できます（Finder からそのまま起動）
+# ダブルクリックで GA4取得 → GSC取得 → 集計 → report.csv 更新 を一括実行
 
-# スクリプトのある場所に移動
 cd "$(dirname "$0")"
 
 echo "=== SEO Auto 起動中 ==="
-python3 src/main.py
+python3 src/run_all.py
 
 echo ""
-echo "完了しました。このウィンドウを閉じてください。"
+echo "完了しました。output/report.csv を確認してください。"
 read -p "Enter キーで終了..." _

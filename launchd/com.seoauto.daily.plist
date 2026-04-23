@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd/install.sh を実行すると {{HOME}} が自動置換されます。
+  手動で設定する場合は {{HOME}} を /Users/あなたのユーザー名 に書き換えてください。
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.seoauto.daily</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>{{HOME}}/Desktop/seo_auto/launchd/run_daily.sh</string>
+  </array>
+
+  <!-- 毎日 08:00 に実行 -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>8</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>{{HOME}}/Desktop/seo_auto/logs/launchd_stdout.log</string>
+  <key>StandardErrorPath</key>
+  <string>{{HOME}}/Desktop/seo_auto/logs/launchd_stderr.log</string>
+
+  <!-- Homebrew の python3 も探せるよう PATH を拡張 -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+</dict>
+</plist>
