@@ -150,7 +150,21 @@ def main(reference_date=None):
               "先に python3 src/fetch_monthly.py を実行してください。")
         sys.exit(1)
 
-    all_urls = set(ga4_cur) | set(ga4_prev) | set(gsc_cur)
+    # article_list.csv があればその記事のみ集計、なければ全記事
+    article_list_path = os.path.join(INPUT_DIR, "article_list.csv")
+    article_index = {}  # {normalized_url: canonical_url}
+    if os.path.exists(article_list_path):
+        with open(article_list_path, newline="", encoding="utf-8") as f:
+            seen = set()
+            for row in csv.DictReader(f):
+                orig = row["article_url"].strip()
+                key = normalize(orig)
+                if key not in seen:
+                    article_index[key] = orig
+                    seen.add(key)
+        all_urls = set(article_index.keys())
+    else:
+        all_urls = set(ga4_cur) | set(ga4_prev) | set(gsc_cur)
 
     rows = []
     for url in all_urls:
@@ -171,7 +185,7 @@ def main(reference_date=None):
         position   = cgs.get("position", "")
         ctr_val    = float(cgs.get("ctr_%", 0) or 0)
         prev_pos   = pgs.get("position")
-        article_url = c4.get("article_url") or p4.get("article_url") or url
+        article_url = c4.get("article_url") or p4.get("article_url") or article_index.get(url, url)
 
         rows.append({
             "_cur_pv": cur_pv,
