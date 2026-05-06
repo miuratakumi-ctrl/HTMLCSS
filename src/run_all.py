@@ -99,7 +99,8 @@ def main():
                 run_step("Ahrefs データ取得",
                          lambda: fetch_ahrefs.fetch(config))
 
-            run_step("集計・レポート生成", aggregate.main)
+            run_step("集計・レポート生成",
+                     lambda: aggregate.main(reference_date=target_date))
             run_step("SEO 分析レポート生成", analyze_seo.main)
 
         elapsed = (datetime.now() - started_at).seconds
