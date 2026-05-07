@@ -20,7 +20,7 @@ def _credentials(creds_path):
     )
 
 
-def fetch(config):
+def fetch(config, target_date=None, start_date=None, end_date=None):
     from google.analytics.data_v1beta import BetaAnalyticsDataClient
     from google.analytics.data_v1beta.types import (
         DateRange, Dimension, Filter, FilterExpression, Metric, RunReportRequest,
@@ -29,9 +29,16 @@ def fetch(config):
     creds_path = os.path.join(BASE_DIR, config["CREDENTIALS_JSON"])
     client = BetaAnalyticsDataClient(credentials=_credentials(creds_path))
 
-    days_back = int(config.get("DAYS_BACK", 28))
-    end_date = date.today() - timedelta(days=1)
-    start_date = end_date - timedelta(days=days_back - 1)
+    # 日付範囲の決定
+    if target_date is not None:
+        # 1日指定: start = end = target_date
+        d = target_date if isinstance(target_date, date) else date.fromisoformat(str(target_date))
+        start_date, end_date = d, d
+    elif start_date is None:
+        days_back = int(config.get("DAYS_BACK", 28))
+        end_date = date.today() - timedelta(days=1)
+        start_date = end_date - timedelta(days=days_back - 1)
+
     date_range = DateRange(
         start_date=start_date.isoformat(),
         end_date=end_date.isoformat(),
@@ -123,5 +130,9 @@ def fetch(config):
 
 
 if __name__ == "__main__":
+    import argparse
     from _config import load_config
-    fetch(load_config())
+    p = argparse.ArgumentParser()
+    p.add_argument("--date", help="集計日 YYYY-MM-DD（省略時は過去DAYS_BACK日間）")
+    args = p.parse_args()
+    fetch(load_config(), target_date=date.fromisoformat(args.date) if args.date else None)

@@ -20,7 +20,7 @@ def _credentials(creds_path):
     )
 
 
-def fetch(config):
+def fetch(config, target_date=None, start_date=None, end_date=None):
     from googleapiclient.discovery import build
 
     creds_path = os.path.join(BASE_DIR, config["CREDENTIALS_JSON"])
@@ -30,9 +30,13 @@ def fetch(config):
         cache_discovery=False,
     )
 
-    days_back = int(config.get("DAYS_BACK", 28))
-    end_date = date.today() - timedelta(days=1)
-    start_date = end_date - timedelta(days=days_back - 1)
+    if target_date is not None:
+        d = target_date if isinstance(target_date, date) else date.fromisoformat(str(target_date))
+        start_date, end_date = d, d
+    elif start_date is None:
+        days_back = int(config.get("DAYS_BACK", 28))
+        end_date = date.today() - timedelta(days=1)
+        start_date = end_date - timedelta(days=days_back - 1)
 
     gsc_property = config["GSC_PROPERTY"]
     rows = []
@@ -87,5 +91,9 @@ def fetch(config):
 
 
 if __name__ == "__main__":
+    import argparse
     from _config import load_config
-    fetch(load_config())
+    p = argparse.ArgumentParser()
+    p.add_argument("--date", help="集計日 YYYY-MM-DD（省略時は過去DAYS_BACK日間）")
+    args = p.parse_args()
+    fetch(load_config(), target_date=date.fromisoformat(args.date) if args.date else None)
