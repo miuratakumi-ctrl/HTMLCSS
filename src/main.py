@@ -22,6 +22,10 @@ OUTPUT_PATH = os.path.join(BASE_DIR, "output", "report.csv")
 # 将来イベント名を変更する場合はここを編集してください
 # ─────────────────────────────────────────────
 CTA_COLUMN_CANDIDATES = [
+    "click",        # ← 現在使用中のイベント名（最優先）
+    "clicks",
+    "Click",
+    "Clicks",
     "CTAクリック数",
     "cta_clicks",
     "CTA clicks",
