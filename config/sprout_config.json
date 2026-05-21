@@ -1,0 +1,22 @@
+{
+  "cf": {
+    "goal_amount": 500000,
+    "return_tiers": [1000, 5000, 10000, 30000, 100000]
+  },
+  "google_sheets": {
+    "credentials_file": "credentials/service_account.json",
+    "spreadsheet_id": "YOUR_SPREADSHEET_ID_HERE",
+    "sheet_names": {
+      "posts":     "📅投稿管理",
+      "weekly":    "📊週次分析",
+      "cf":        "🎯CF管理",
+      "returns":   "🎁リターン管理",
+      "followers": "📈フォロワー推移"
+    }
+  },
+  "input": {
+    "posts_csv":      "input/posts.csv",
+    "cf_csv":         "input/cf_supporters.csv",
+    "followers_csv":  "input/followers.csv"
+  }
+}

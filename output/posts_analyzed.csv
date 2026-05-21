@@ -1,0 +1,6 @@
+date,platform,post_type,likes,comments,shares,saves,impressions,engagement_rate,url,memo
+2024-05-01,Instagram,画像,120,15,8,30,2500,6.92,https://www.instagram.com/p/example1/,CF告知投稿
+2024-05-03,Instagram,リール,350,42,25,80,8200,6.06,https://www.instagram.com/p/example2/,ストーリー仕立て
+2024-05-05,Twitter,テキスト,45,12,20,0,1800,4.28,https://twitter.com/example/status/1,活動報告
+2024-05-07,Instagram,画像,210,28,15,55,4100,7.51,https://www.instagram.com/p/example3/,リターン紹介
+2024-05-10,YouTube,動画,85,30,12,0,3200,3.97,https://youtu.be/example4,SPROUT活動紹介
