@@ -18,21 +18,21 @@ def process(input_path, output_path):
     with open(input_path, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
             rows.append({
-                "article_url": row["article_url"],
-                "monthly_expected_pv": int(row["monthly_expected_pv"]),
+                "記事URL": row["記事URL"],
+                "月間想定PV": int(row["月間想定PV"]),
             })
 
-    total = sum(r["monthly_expected_pv"] for r in rows)
+    total = sum(r["月間想定PV"] for r in rows)
 
     print(f"\n{'URL':<45} {'月間想定PV':>12}")
     print("-" * 58)
     for r in rows:
-        print(f"{r['article_url']:<45} {r['monthly_expected_pv']:>12,}")
+        print(f"{r['記事URL']:<45} {r['月間想定PV']:>12,}")
     print("-" * 58)
     print(f"{'合計':<45} {total:>12,}")
 
     with open(output_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["article_url", "monthly_expected_pv"])
+        writer = csv.DictWriter(f, fieldnames=["記事URL", "月間想定PV"])
         writer.writeheader()
         writer.writerows(rows)
         f.write(f"\n合計,{total}\n")
