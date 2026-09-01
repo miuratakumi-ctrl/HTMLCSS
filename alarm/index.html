@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>目覚ましアプリ</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <h1 class="title">⏰ 目覚まし</h1>
+
+    <section class="clock">
+      <div id="now" class="now">--:--:--</div>
+      <div id="today" class="today"></div>
+    </section>
+
+    <section class="form">
+      <label class="label" for="time">アラーム時刻</label>
+      <input type="time" id="time" class="time-input" required>
+
+      <label class="label" for="labelInput">ラベル（任意）</label>
+      <input type="text" id="labelInput" class="text-input" placeholder="起きる時間です" maxlength="30">
+
+      <fieldset class="days">
+        <legend class="label">繰り返し（未選択なら1回のみ）</legend>
+        <div class="day-list" id="dayList"></div>
+      </fieldset>
+
+      <button id="addBtn" class="btn primary" type="button">アラームを追加</button>
+    </section>
+
+    <section class="list-section">
+      <h2 class="subtitle">設定中のアラーム</h2>
+      <ul id="alarmList" class="alarm-list"></ul>
+      <p id="empty" class="empty">まだアラームがありません。</p>
+    </section>
+  </main>
+
+  <div id="ringing" class="overlay hidden">
+    <div class="ring-box">
+      <div class="ring-icon">🔔</div>
+      <div id="ringTime" class="ring-time"></div>
+      <div id="ringLabel" class="ring-label"></div>
+      <div class="ring-actions">
+        <button id="snoozeBtn" class="btn" type="button">スヌーズ（5分）</button>
+        <button id="stopBtn" class="btn primary" type="button">停止</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+:root {
+  --bg: #12151c;
+  --panel: #1c212c;
+  --panel-2: #232937;
+  --text: #eef1f6;
+  --muted: #9aa4b7;
+  --accent: #ff8a4c;
+  --accent-2: #4cc9f0;
+  --danger: #ff5c5c;
+  --radius: 14px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at 50% 0%, #222a3a 0%, var(--bg) 60%);
+  color: var(--text);
+  font-family: "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px 48px;
+}
+
+.app { width: 100%; max-width: 460px; }
+
+.title { text-align: center; font-size: 22px; margin: 8px 0 20px; }
+.subtitle { font-size: 15px; color: var(--muted); margin: 0 0 10px; }
+
+.clock {
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: 22px 16px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.now { font-size: 44px; font-weight: 700; letter-spacing: 2px; font-variant-numeric: tabular-nums; }
+.today { color: var(--muted); margin-top: 6px; font-size: 13px; }
+
+.form {
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+  margin-bottom: 22px;
+}
+.label { display: block; font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+
+.time-input, .text-input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 14px;
+  background: var(--panel-2);
+  border: 1px solid #333c4e;
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 16px;
+}
+.time-input:focus, .text-input:focus { outline: 2px solid var(--accent-2); }
+
+.days { border: 0; padding: 0; margin: 0 0 16px; }
+.day-list { display: flex; gap: 6px; }
+.day-list input { position: absolute; opacity: 0; pointer-events: none; }
+.day-list label {
+  flex: 1;
+  text-align: center;
+  padding: 9px 0;
+  border-radius: 9px;
+  background: var(--panel-2);
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+}
+.day-list input:checked + label { background: var(--accent); color: #23180f; font-weight: 700; }
+.day-list input:focus-visible + label { outline: 2px solid var(--accent-2); }
+
+.btn {
+  width: 100%;
+  padding: 13px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 15px;
+  cursor: pointer;
+}
+.btn.primary { background: var(--accent); color: #23180f; font-weight: 700; }
+.btn:hover { filter: brightness(1.1); }
+
+.alarm-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.alarm-item {
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: 14px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.alarm-item.off { opacity: .45; }
+.alarm-main { flex: 1; min-width: 0; }
+.alarm-time { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.alarm-meta { font-size: 12px; color: var(--muted); margin-top: 3px; overflow-wrap: anywhere; }
+
+.switch { position: relative; width: 46px; height: 26px; flex: none; }
+.switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.slider {
+  position: absolute; inset: 0;
+  background: #3a4358; border-radius: 999px; transition: background .2s;
+  pointer-events: none;
+}
+.slider::after {
+  content: ""; position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .2s;
+}
+.switch input:checked + .slider { background: var(--accent-2); }
+.switch input:checked + .slider::after { transform: translateX(20px); }
+
+.delete {
+  border: 0; background: transparent; color: var(--danger);
+  font-size: 18px; cursor: pointer; padding: 4px 6px;
+}
+
+.empty { color: var(--muted); font-size: 13px; text-align: center; }
+
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(10, 12, 18, .92);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; z-index: 10;
+}
+.overlay.hidden { display: none; }
+.ring-box { text-align: center; max-width: 340px; width: 100%; }
+.ring-icon { font-size: 64px; animation: shake .8s infinite; }
+.ring-time { font-size: 46px; font-weight: 700; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.ring-label { color: var(--muted); margin: 6px 0 24px; overflow-wrap: anywhere; }
+.ring-actions { display: grid; gap: 10px; }
+
+@keyframes shake {
+  0%, 100% { transform: rotate(-12deg); }
+  50% { transform: rotate(12deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ring-icon { animation: none; }
+}
